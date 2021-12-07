@@ -8,9 +8,11 @@ VM1_NAME="Windows 10"
 # $1 - name of vm to shutdown
 # $2 - name of vm to start
 switch_vm() {
-  virsh shutdown "$1"
+  local -r vm_to_shutdown="$1"; shift
+  local -r vm_to_start="$1"; shift
+  virsh shutdown "$vm_to_shutdown"
   sleep 30
-  virsh start "$2"
+  virsh start "$vm_to_start"
 }
 
 if virsh list | grep -q "$VM0_NAME"; then
