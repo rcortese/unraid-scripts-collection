@@ -8,6 +8,7 @@ VM1_NAME="Windows 10"
 # $1 - name of vm to shutdown
 # $2 - name of vm to start
 switch_vm() {
+  virsh shutdown "$1"
   sleep 30
   virsh start "$2"
 }
