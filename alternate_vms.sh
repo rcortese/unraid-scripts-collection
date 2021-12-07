@@ -14,7 +14,7 @@ switch_vm() {
 }
 
 if virsh list | grep -q "$VM0_NAME"; then
-  switch_vms "$VM0_NAME" "$VM1_NAME"
+  switch_vm "$VM0_NAME" "$VM1_NAME"
 elif virsh list | grep -q "$VM1_NAME"; then
-  switch_vms "$VM1_NAME" "$VM0_NAME"
+  switch_vm "$VM1_NAME" "$VM0_NAME"
 fi
