@@ -1,10 +1,17 @@
 #!/bin/bash
 set -e
 
+###################################################
+## User filled variables
+
 # Fill with the names of VMs to alternate between
 # If a VM is listed as active, the next one will be started (or first if last)
-declare -r -a vms_to_alternate=(  "Windows 10" "Pop_OS" )
+declare -r -a vms_to_alternate=( "Pop_OS" "Windows 10" )
+declare -r debug_mode=true
 
+
+###################################################
+## Functions
 
 # Switches between two vms
 # $1 - name of vm to shutdown
@@ -14,11 +21,19 @@ switch_vm() {
   local -r vm_to_shutdown="$1"; shift
   local -r vm_to_start="$1"; shift
 
-  echo "requesting shutdown of VM: ${vm_to_shutdown}"
-  virsh shutdown "${vm_to_shutdown}"
-  sleep 30
-  echo "requesting start of VM: ${vm_to_start}"
-  virsh start "${vm_to_start}"
+  echo "Requesting shutdown of VM: ${vm_to_shutdown}"
+  if [ "$debug_mode" = true ]; then
+    echo "no action taken, debug mode only..."
+  else
+    virsh shutdown "${vm_to_shutdown}"
+    sleep 30
+  fi
+  echo "Requesting start of VM: ${vm_to_start}"
+  if [ "$debug_mode" = true ]; then
+    echo "no action taken, debug mode only..."
+  else
+    virsh start "${vm_to_start}"
+  fi
 }
 
 
