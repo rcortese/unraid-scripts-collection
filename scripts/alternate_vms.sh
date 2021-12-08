@@ -57,10 +57,10 @@ start_vm() {
 
 }
 
-# Switches between two vms
+# Alternates between two vms
 # $1 - name of vm to shutdown
 # $2 - name of vm to start
-switch_vm() {
+alternate_vms() {
 
   local -r vm_to_shutdown="$1"; shift
   local -r vm_to_start="$1"; shift
@@ -98,7 +98,7 @@ main() {
     fi
   done
 
-  switch_vm "${vm_to_shutdown}" "${vm_to_start}"
+  alternate_vms "${vm_to_shutdown}" "${vm_to_start}"
   exit 0
 }
 
