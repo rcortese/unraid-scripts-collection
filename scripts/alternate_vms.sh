@@ -8,15 +8,16 @@ set -e
 # If a VM is listed as active, the next one will be started (or first if last)
 declare -r -a vms_to_alternate=( "Pop_OS" "Windows 10" )
 declare -r graceful_shutdown_timeout=30 # in seconds
+declare -r force_shutdown_if_timeout=true # vm might be forcefully shutdown if set to true
 declare -r debug_mode=true # no action, only logs if set to true
 
 
 ###################################################
 ## Functions
 
-# Requests graceful shutdown of a vm and forces shutdown if timeout. Code execution is halted until vm no longer active.
+# Requests graceful shutdown of a vm. Code execution is halted until vm no longer active.
 # $1 - name of vm to shutdown
-shutdown_vm() {
+request_shutdown_vm() {
 
   local -r vm_to_shutdown="$1"; shift
 
@@ -27,18 +28,40 @@ shutdown_vm() {
     virsh shutdown "${vm_to_shutdown}"
   fi
 
-  # waits until vm is no longer listed (polling virsh every second)
   local -i time_elapsed=1 # setting it to 0 makes it not a number apparently (went with workaround =1 here and -gt and +1 below)
   # until vm name no longer in virsh list
   until ! virsh list | grep -q "${vm_to_shutdown}"
   do
+    # wait
     echo "Waiting for graceful shutdown of ${vm_to_shutdown} (timeout in $((graceful_shutdown_timeout+1-time_elapsed))s)"
     sleep 1 && ((time_elapsed++))
     # break if timeout exceeded
     if [ ${time_elapsed} -gt ${graceful_shutdown_timeout} ]; then
-      echo "Timeout!"
+      echo "Timeout reached!"
       break
     fi
+  done
+}
+
+# Forcefully shutdown a vm and forces shutdown if timeout. Code execution is halted until vm no longer active.
+# $1 - name of vm to shutdown
+force_shutdown_vm() {
+
+  local -r vm_to_shutdown="$1"; shift
+
+  echo "Forcefully shutting down VM: ${vm_to_shutdown}"
+  if [ "${debug_mode}" = true ]; then
+    echo "no action taken, debug mode only..."
+  else
+    virsh destroy "${vm_to_shutdown}"
+  fi
+
+  # waits until vm is no longer listed (polling virsh every second)
+  # until vm name no longer in virsh list
+  until ! virsh list | grep -q "${vm_to_shutdown}"
+  do
+    echo "Waiting for forceful shutdown of ${vm_to_shutdown}"
+    sleep 3
   done
 }
 
@@ -65,7 +88,15 @@ alternate_vms() {
   local -r vm_to_shutdown="$1"; shift
   local -r vm_to_start="$1"; shift
 
-  shutdown_vm ${vm_to_shutdown}
+  request_shutdown_vm ${vm_to_shutdown}
+  # if vm still exists after waiting for request
+  if ! virsh list | grep -q "${vm_to_shutdown}"; then
+    # if authorized in global vars
+    if [ "$force_shutdown_if_timeout" = true ]; then
+      # force shutdown
+      force_shutdown_vm "${vm_to_shutdown}"
+    fi
+  fi
   start_vm ${vm_to_start}
 }
 
