@@ -47,7 +47,7 @@ await_vm_termination() {
 # $1 - name of vm to shutdown
 shutdown_vm() {
 
-  local -r vm_to_shutdown="$1"; shift
+  local -r vm_to_shutdown="$1"
 
   echo "Gracefully shutting down VM: ${vm_to_shutdown}"
   if [ "$debug_mode" = true ]; then
@@ -61,7 +61,7 @@ shutdown_vm() {
 # $1 - name of vm to shutdown
 force_shutdown_vm() {
 
-  local -r vm_to_shutdown="$1"; shift
+  local -r vm_to_shutdown="$1"
 
   echo "Forcefully shutting down VM: ${vm_to_shutdown}"
   if [ "${debug_mode}" = true ]; then
@@ -75,7 +75,7 @@ force_shutdown_vm() {
 # $1 - name of vm to start
 start_vm() {
 
-  local -r vm_to_start="$1"; shift
+  local -r vm_to_start="$1"
 
   echo "Starting VM: ${vm_to_start}"
   if [ "${debug_mode}" = true ]; then
@@ -83,7 +83,6 @@ start_vm() {
   else
     virsh start "${vm_to_start}"
   fi  
-
 }
 
 # Alternates between two vms
@@ -92,7 +91,7 @@ start_vm() {
 alternate_vms() {
 
   local -r vm_to_shutdown="$1"; shift
-  local -r vm_to_start="$1"; shift
+  local -r vm_to_start="$1"
 
   shutdown_vm "${vm_to_shutdown}"
   await_vm_termination "${vm_to_shutdown}" "${graceful_shutdown_timeout}" "graceful shutdown"
