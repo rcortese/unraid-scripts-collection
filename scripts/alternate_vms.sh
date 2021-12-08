@@ -3,17 +3,43 @@ set -e
 
 ###################################################
 ## User filled variables
+##
 
-# Fill with the names of VMs to alternate between
-# If a VM is listed as active, the next one will be started (or first if last)
+
+# names of VMs to alternate between (may be more than 2)
+# if a VM is listed as active, the next one will be started. If no VM is active, the first one will be started
 declare -r -a vms_to_alternate=( "Pop_OS" "Windows 10" )
-declare -r graceful_shutdown_timeout=30 # in seconds
-declare -r force_shutdown_if_timeout=true # vm might be forcefully shutdown if set to true
-declare -r debug_mode=true # no action, only logs if set to true
+
+# time to wait for a graceful shutdown to be considered success
+declare -r graceful_shutdown_timeout=30
+
+# should termination be forced if graceful reaches a timeout?
+declare -r force_shutdown_if_timeout=true
+
+# no action, only logs if set to true
+declare -r debug_mode=true
+
+
+##
+## IMPORTANT: FILL THE VARIABLES ABOVE ACCORDINGLY
+###################################################
 
 
 ###################################################
 ## Functions
+
+# Returns true (0) if vm is listed as active
+# $1 - name of vm to search for
+vm_is_active() {
+
+  local -r vm_name="$1"
+
+  if virsh list | grep -q "${vm_name}"; then
+    return 0
+  else
+    return 1
+  fi
+}
 
 # Halts execution until vm is no longer listed or timeout is exceeded
 # $1 - name of vm to await for shutdown
@@ -26,7 +52,7 @@ await_vm_termination() {
 
   local -i time_elapsed=1 # setting it to 0 makes it not a number apparently (went with workaround =1 here and -gt and +1 below)
   # until vm name no longer listed by virsh
-  until ! virsh list | grep -q "${vm_name}"
+  until ! vm_is_active "${vm_name}"
   do
     local timeout_warning=""
     if ! [ -z "${timeout}" ]; then
@@ -82,7 +108,7 @@ start_vm() {
     echo "no action taken, debug mode only..."
   else
     virsh start "${vm_name}"
-  fi  
+  fi
 }
 
 # Alternates between two vms
@@ -97,7 +123,7 @@ alternate_vms() {
   await_vm_termination "${vm_to_shutdown}" "${graceful_shutdown_timeout}" "graceful shutdown"
 
   # if vm still exists after waiting for request
-  if virsh list | grep -q "${vm_to_shutdown}"; then
+  if vm_is_active "${vm_to_shutdown}"; then
     # if authorized in global vars
     if [ "$force_shutdown_if_timeout" = true ]; then
       # force shutdown
@@ -119,13 +145,12 @@ main() {
 
   echo "Searching for active VMs:
   "
-  local -r active_vms_list=$(virsh list)
-  echo "${active_vms_list}
+  echo "$(virsh list)
   "
   for i in "${!vms_to_alternate[@]}"
   do
     # if vm is listed as active
-    if echo "${active_vms_list}" | grep -q "${vms_to_alternate[i]}"; then
+    if vm_is_active "${vms_to_alternate[i]}"; then
       echo "${vms_to_alternate[i]} VM reported active!"
       # set it to shutdown
       vm_to_shutdown="${vms_to_alternate[i]}"
