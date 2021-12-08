@@ -20,19 +20,19 @@ declare -r debug_mode=true # no action, only logs if set to true
 # $2 - timeout (in seconds) - optional
 # $3 - termination type (for logging only) - optional
 await_vm_termination() {
-  local -r vm_to_wait_for="$1"; shift
+  local -r vm_name="$1"; shift
   local -ri timeout="$1"; shift
   local termination_type=${1:-shutdown}
 
   local -i time_elapsed=1 # setting it to 0 makes it not a number apparently (went with workaround =1 here and -gt and +1 below)
   # until vm name no longer listed by virsh
-  until ! virsh list | grep -q "${vm_to_wait_for}"
+  until ! virsh list | grep -q "${vm_name}"
   do
     local timeout_warning=""
     if ! [ -z "${timeout}" ]; then
       timeout_warning="(timeout in $((timeout+1-time_elapsed))s)"
     fi
-    echo "Waiting for ${termination_type} of ${vm_to_shutdown} ${timeout_warning}"
+    echo "Waiting for ${termination_type} of ${vm_name} ${timeout_warning}"
     # wait
     sleep 1 && ((time_elapsed++))
     # break if timeout exceeded
@@ -47,13 +47,13 @@ await_vm_termination() {
 # $1 - name of vm to shutdown
 shutdown_vm() {
 
-  local -r vm_to_shutdown="$1"
+  local -r vm_name="$1"
 
-  echo "Gracefully shutting down VM: ${vm_to_shutdown}"
+  echo "Gracefully shutting down VM: ${vm_name}"
   if [ "$debug_mode" = true ]; then
     echo "no action taken, debug mode only..."
   else
-    virsh shutdown "${vm_to_shutdown}"
+    virsh shutdown "${vm_name}"
   fi
 }
 
@@ -61,13 +61,13 @@ shutdown_vm() {
 # $1 - name of vm to shutdown
 force_shutdown_vm() {
 
-  local -r vm_to_shutdown="$1"
+  local -r vm_name="$1"
 
-  echo "Forcefully shutting down VM: ${vm_to_shutdown}"
+  echo "Forcefully shutting down VM: ${vm_name}"
   if [ "${debug_mode}" = true ]; then
     echo "no action taken, debug mode only..."
   else
-    virsh destroy "${vm_to_shutdown}"
+    virsh destroy "${vm_name}"
   fi
 }
 
@@ -75,13 +75,13 @@ force_shutdown_vm() {
 # $1 - name of vm to start
 start_vm() {
 
-  local -r vm_to_start="$1"
+  local -r vm_name="$1"
 
-  echo "Starting VM: ${vm_to_start}"
+  echo "Starting VM: ${vm_name}"
   if [ "${debug_mode}" = true ]; then
     echo "no action taken, debug mode only..."
   else
-    virsh start "${vm_to_start}"
+    virsh start "${vm_name}"
   fi  
 }
 
