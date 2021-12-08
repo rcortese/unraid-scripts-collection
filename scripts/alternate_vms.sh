@@ -133,7 +133,7 @@ alternate_vms() {
     fi
   fi
 
-  start_vm ${vm_to_start}
+  start_vm "${vm_to_start}"
 }
 
 # Main funcion...
