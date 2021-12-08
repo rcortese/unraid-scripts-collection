@@ -119,15 +119,17 @@ alternate_vms() {
   local -r vm_to_shutdown="$1"; shift
   local -r vm_to_start="$1"
 
-  shutdown_vm "${vm_to_shutdown}"
-  await_vm_termination "${vm_to_shutdown}" "${graceful_shutdown_timeout}" "graceful shutdown"
+  if [ -z "${vm_to_shutdown}" ]; then
+    echo "No vm on the list was reported active..."
+  else
+    shutdown_vm "${vm_to_shutdown}"
+    await_vm_termination "${vm_to_shutdown}" "${graceful_shutdown_timeout}" "graceful shutdown"
 
-  if vm_is_active "${vm_to_shutdown}"; then
-    # if authorized in global vars
-    if [ "$force_shutdown_if_timeout" = true ]; then
-      # force shutdown
-      force_shutdown_vm "${vm_to_shutdown}"
-      await_vm_termination "${vm_to_shutdown}" 10 "forced shutdown"
+    if vm_is_active "${vm_to_shutdown}"; then
+      if [ "$force_shutdown_if_timeout" = true ]; then
+        force_shutdown_vm "${vm_to_shutdown}"
+        await_vm_termination "${vm_to_shutdown}" 10 "forced shutdown"
+      fi
     fi
   fi
 
@@ -140,8 +142,7 @@ main() {
 
   # vm_to_start defaults to first one
   local vm_to_start="${vms_to_alternate[0]}"
-  # vm_to_shutdown defaults to a display message
-  local vm_to_shutdown="NO_ACTIVE_VM_FOUND"
+  local vm_to_shutdown
 
   echo "Searching for active VMs:
   "
@@ -149,12 +150,11 @@ main() {
   "
   for i in "${!vms_to_alternate[@]}"
   do
-    # if vm is listed as active
     if vm_is_active "${vms_to_alternate[i]}"; then
       echo "${vms_to_alternate[i]} VM reported active!"
-      # set it to shutdown
+      # set active vm for shutdown
       vm_to_shutdown="${vms_to_alternate[i]}"
-      # and the next one to start (if not last)
+      # set next listed vm for startup
       if ! [ -z "${vms_to_alternate[i+1]}" ]; then
         vm_to_start="${vms_to_alternate[i+1]}"
       fi
