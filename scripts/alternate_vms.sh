@@ -48,7 +48,7 @@ vm_is_active() {
 await_vm_termination() {
   local -r vm_name="$1"; shift
   local -ri timeout="$1"; shift
-  local termination_type=${1:-shutdown}
+  local termination_type="${1:-shutdown}"
 
   local -i time_elapsed=1 # setting it to 0 makes it not a number apparently (went with workaround =1 here and -gt and +1 below)
   # until vm name no longer listed by virsh
@@ -122,7 +122,6 @@ alternate_vms() {
   shutdown_vm "${vm_to_shutdown}"
   await_vm_termination "${vm_to_shutdown}" "${graceful_shutdown_timeout}" "graceful shutdown"
 
-  # if vm still exists after waiting for request
   if vm_is_active "${vm_to_shutdown}"; then
     # if authorized in global vars
     if [ "$force_shutdown_if_timeout" = true ]; then
@@ -131,6 +130,7 @@ alternate_vms() {
       await_vm_termination "${vm_to_shutdown}" 10 "forced shutdown"
     fi
   fi
+
   start_vm ${vm_to_start}
 }
 
@@ -163,7 +163,14 @@ main() {
   done
 
   alternate_vms "${vm_to_shutdown}" "${vm_to_start}"
-  exit 0
+  sleep 10
+  if ! vm_is_active "${vm_to_start}"; then
+    echo "ERROR: vm ${vm_to_start} seems to not have been started!"
+    exit 1
+  else
+    echo "SUCCESS: vm ${vm_to_start} seems to have been started successfully!"
+    exit 0
+  fi
 }
 
 main
