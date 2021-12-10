@@ -99,7 +99,7 @@ await_vm_termination() {
   # until vm name no longer listed by virsh
   until ! vm_is_active "${vm_name}"
   do
-    local timeout_warning = "timeout in $((timeout+1-time_elapsed))s"
+    local timeout_warning="timeout in $((timeout+1-time_elapsed))s"
     echo "Waiting for ${termination_type} of ${vm_name} (${timeout_warning})"
     # wait
     sleep 1 && ((time_elapsed++))
