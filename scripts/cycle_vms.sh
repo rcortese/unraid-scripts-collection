@@ -7,7 +7,7 @@ set -e
 
 # names of VMs to cycle through, as listed by virsh (same as on Unraid VM tab)
 # More than 2 may be used
-declare -r -a vm_names_list=( "Pop_OS" "Windows 10" )
+declare -r -a vm_names_list=( "HiveOS" "Windows 10" )
 
 # timeouts
 # time to wait for a graceful shutdown to be considered success

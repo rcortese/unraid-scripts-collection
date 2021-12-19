@@ -12,7 +12,7 @@ Cycles between a list of VMs. Intended to be used with resource sharing VMs (suc
 
 ``` sh
 # example (vm_names_list already declared in the headers, fill it with your setup)
-declare -r -a vm_names_list=( "Pop_OS" "Windows 10" )
+declare -r -a vm_names_list=( "Pop_OS" "Windows 10" "HiveOS" )
 ```
 
 The script works as such (using virsh):
