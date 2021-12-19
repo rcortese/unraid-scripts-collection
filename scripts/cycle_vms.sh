@@ -5,8 +5,8 @@ set -e
 ## User filled variables
 ##
 
-# names of VMs to alternate between (may be more than 2)
-# if a VM is listed as active, the next one will be started. If no VM is active, the first one will be started
+# names of VMs to cycle through, as listed by virsh (same as on Unraid VM tab)
+# More than 2 may be used
 declare -r -a vm_names_list=( "Pop_OS" "Windows 10" )
 
 # timeouts
