@@ -30,7 +30,7 @@ vm_is_active() {
 
   local -r vm_name="$1"
 
-  if virsh list | grep -q "${vm_name}"; then
+  if virsh list | grep -q "$vm_name"; then
     return 0
   else
     return 1
@@ -45,10 +45,10 @@ bind_device() {
   local -r idVendor="$1"; shift
   local -r idProduct="$1"; shift
 
-  if [ "${debug_mode}" = true ]; then
+  if [ "$debug_mode" = true ]; then
     echo "--- no action taken, debug mode only ---"
   else
-    # virsh attach-device ${vm_name} --file usb_device.xml --current
+    # virsh attach-device $vm_name --file usb_device.xml --current
   fi
 }
 
@@ -57,14 +57,14 @@ bind_device() {
 main() {
 
   local -i time_elapsed=0
-  until ${time_elapsed} -gt ${timeout}
+  until $time_elapsed -gt $timeout
   do
-    if vm_is_active "${vm_name}"; then
-      echo "${vm_name} active!"
+    if vm_is_active "$vm_name"; then
+      echo "$vm_name active!"
       echo "binding devices..."
       for i in "${!devices_list[@]}"
       do
-        echo "binding ${devices_list[i]} to ${vm_name}"
+        echo "binding ${devices_list[i]} to $vm_name"
         # TODO:
         bind_device "id" "id"
       done
@@ -72,21 +72,21 @@ main() {
       ((time_elapsed++)) # just in case
       break
     else
-      echo "${vm_name} not active yet..."
+      echo "$vm_name not active yet..."
       sleep 1 && ((time_elapsed++))
     fi
   done
 
   sleep 1
 
-  if ! vm_is_active "${vm_name}"; then
-    echo "Error: ${vm_name} not active!"
+  if ! vm_is_active "$vm_name"; then
+    echo "Error: $vm_name not active!"
     exit 1
   # elif device not bound
     # echo device not bound
     # exit 1
   else
-    echo "Success: devices have been bound to VM ${vm_to_start} succesfully!"
+    echo "Success: devices have been bound to $vm_to_start!"
     exit 0
   fi
 }

@@ -34,7 +34,7 @@ vm_is_active() {
 
   local -r vm_name="$1"
 
-  if virsh list | grep -q "${vm_name}"; then
+  if virsh list | grep -q "$vm_name"; then
     return 0
   else
     return 1
@@ -47,11 +47,11 @@ shutdown_vm() {
 
   local -r vm_name="$1"
 
-  echo "Gracefully shutting down VM: ${vm_name}"
+  echo "Gracefully shutting down VM: $vm_name"
   if [ "$debug_mode" = true ]; then
     echo "no action taken, debug mode only..."
   else
-    virsh shutdown "${vm_name}"
+    virsh shutdown "$vm_name"
   fi
 }
 
@@ -61,11 +61,11 @@ force_shutdown_vm() {
 
   local -r vm_name="$1"
 
-  echo "Forcing shut down of ${vm_name} VM..."
-  if [ "${debug_mode}" = true ]; then
+  echo "Forcing shut down of $vm_name VM..."
+  if [ "$debug_mode" = true ]; then
     echo "--- no action taken, debug mode only ---"
   else
-    virsh destroy "${vm_name}"
+    virsh destroy "$vm_name"
   fi
 }
 
@@ -75,11 +75,11 @@ start_vm() {
 
   local -r vm_name="$1"
 
-  echo "Starting ${vm_name} VM..."
-  if [ "${debug_mode}" = true ]; then
+  echo "Starting $vm_name VM..."
+  if [ "$debug_mode" = true ]; then
     echo "--- no action taken, debug mode only ---"
   else
-    virsh start "${vm_name}"
+    virsh start "$vm_name"
   fi
 }
 
@@ -94,14 +94,14 @@ await_vm_termination() {
 
   local -i time_elapsed=1 # setting it to 0 makes it not a number apparently (went with workaround =1 here and -gt and +1 below)
   # until vm name no longer listed by virsh
-  until ! vm_is_active "${vm_name}"
+  until ! vm_is_active "$vm_name"
   do
     local timeout_warning="timeout in $((timeout+1-time_elapsed))s"
-    echo "Waiting for ${termination_type} of ${vm_name} (${timeout_warning})"
+    echo "Waiting for $termination_type of $vm_name ($timeout_warning)"
     # wait
     sleep 1 && ((time_elapsed++))
     # break if timeout exceeded
-    if [ ${time_elapsed} -gt ${timeout} ]; then
+    if [ $time_elapsed -gt $timeout ]; then
       echo "Timeout reached!"
       break
     fi
@@ -116,21 +116,21 @@ alternate_vms() {
   local -r vm_to_shutdown="$1"; shift
   local -r vm_to_start="$1"
 
-  if [ -z "${vm_to_shutdown}" ]; then
+  if [ -z "$vm_to_shutdown" ]; then
     echo "No VM on 'vm_names_list' variable was reported active..."
   else
-    shutdown_vm "${vm_to_shutdown}"
-    await_vm_termination "${vm_to_shutdown}" ${graceful_shutdown_timeout} "graceful shutdown"
+    shutdown_vm "$vm_to_shutdown"
+    await_vm_termination "$vm_to_shutdown" $graceful_shutdown_timeout "graceful shutdown"
 
-    if vm_is_active "${vm_to_shutdown}"; then
+    if vm_is_active "$vm_to_shutdown"; then
       if [ "$force_shutdown_if_timeout" = true ]; then
-        force_shutdown_vm "${vm_to_shutdown}"
-        await_vm_termination "${vm_to_shutdown}" ${forced_shutdown_timeout} "forced shutdown"
+        force_shutdown_vm "$vm_to_shutdown"
+        await_vm_termination "$vm_to_shutdown" $forced_shutdown_timeout "forced shutdown"
       fi
     fi
   fi
 
-  start_vm "${vm_to_start}"
+  start_vm "$vm_to_start"
 }
 
 # Main funcion...
@@ -155,18 +155,18 @@ main() {
       if ! [ -z "${vm_names_list[i+1]}" ]; then
         vm_to_start="${vm_names_list[i+1]}"
       fi
-      echo "next on list: ${vm_to_start}"
+      echo "next on list: $vm_to_start"
     fi
   done
 
-  alternate_vms "${vm_to_shutdown}" "${vm_to_start}"
+  alternate_vms "$vm_to_shutdown" "$vm_to_start"
 
   sleep 10
-  if ! vm_is_active "${vm_to_start}"; then
-    echo "ERROR: VM ${vm_to_start} seems to not have been started!"
+  if ! vm_is_active "$vm_to_start"; then
+    echo "ERROR: VM $vm_to_start seems to not have been started!"
     exit 1
   else
-    echo "SUCCESS: VM ${vm_to_start} seems to have been started successfully!"
+    echo "SUCCESS: VM $vm_to_start seems to have been started successfully!"
     exit 0
   fi
 }
