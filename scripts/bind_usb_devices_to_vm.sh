@@ -37,6 +37,21 @@ vm_is_active() {
   fi
 }
 
+# Bind device to vm
+# $1 - device idVendor
+# $2 - device idProduct
+bind_device() {
+
+  local -r idVendor="$1"; shift
+  local -r idProduct="$1"; shift
+
+  if [ "${debug_mode}" = true ]; then
+    echo "--- no action taken, debug mode only ---"
+  else
+    # virsh attach-device ${vm_name} --file usb_device.xml --current
+  fi
+}
+
 # Main funcion...
 # The magic starts here
 main() {
@@ -45,8 +60,14 @@ main() {
   until ${time_elapsed} -gt ${timeout}
   do
     if vm_is_active "${vm_name}"; then
-      echo "${vm_names_list[i]} VM reported active!"
+      echo "${vm_name} active!"
       echo "binding devices..."
+      for i in "${!devices_list[@]}"
+      do
+        echo "binding ${devices_list[i]} to ${vm_name}"
+        # TODO:
+        bind_device "id" "id"
+      done
       # virsh bind usb device
       ((time_elapsed++)) # just in case
       break
