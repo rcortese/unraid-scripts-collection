@@ -5,10 +5,9 @@ set -e
 ## User filled variables
 ##
 
-
 # names of VMs to alternate between (may be more than 2)
 # if a VM is listed as active, the next one will be started. If no VM is active, the first one will be started
-declare -r -a vms_to_alternate=( "Pop_OS" "Windows 10" )
+declare -r -a vm_names_list=( "Pop_OS" "Windows 10" )
 
 # timeouts
 # time to wait for a graceful shutdown to be considered success
@@ -22,11 +21,9 @@ declare -r force_shutdown_if_timeout=true
 # no action, only logs if set to true
 declare -r debug_mode=true
 
-
 ##
 ## IMPORTANT: FILL THE VARIABLES ABOVE ACCORDINGLY
 ###################################################
-
 
 ###################################################
 ## Functions
@@ -120,7 +117,7 @@ alternate_vms() {
   local -r vm_to_start="$1"
 
   if [ -z "${vm_to_shutdown}" ]; then
-    echo "No VM on 'vms_to_alternate' variable was reported active..."
+    echo "No VM on 'vm_names_list' variable was reported active..."
   else
     shutdown_vm "${vm_to_shutdown}"
     await_vm_termination "${vm_to_shutdown}" ${graceful_shutdown_timeout} "graceful shutdown"
@@ -141,22 +138,22 @@ alternate_vms() {
 main() {
 
   # vm_to_start defaults to first one
-  local vm_to_start="${vms_to_alternate[0]}"
+  local vm_to_start="${vm_names_list[0]}"
   local vm_to_shutdown
 
   echo "Searching for active VMs:
   "
   echo "$(virsh list)
   "
-  for i in "${!vms_to_alternate[@]}"
+  for i in "${!vm_names_list[@]}"
   do
-    if vm_is_active "${vms_to_alternate[i]}"; then
-      echo "${vms_to_alternate[i]} VM reported active!"
+    if vm_is_active "${vm_names_list[i]}"; then
+      echo "${vm_names_list[i]} VM reported active!"
       # set active vm for shutdown
-      vm_to_shutdown="${vms_to_alternate[i]}"
+      vm_to_shutdown="${vm_names_list[i]}"
       # set next listed vm for startup
-      if ! [ -z "${vms_to_alternate[i+1]}" ]; then
-        vm_to_start="${vms_to_alternate[i+1]}"
+      if ! [ -z "${vm_names_list[i+1]}" ]; then
+        vm_to_start="${vm_names_list[i+1]}"
       fi
       echo "next on list: ${vm_to_start}"
     fi
