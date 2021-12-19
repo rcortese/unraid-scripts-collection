@@ -163,6 +163,8 @@ main() {
 
   sleep 10
   if ! vm_is_active "$vm_to_start"; then
+    # restart originally active vm if failure
+    start_vm "$vm_to_shutdown"
     echo "ERROR: VM $vm_to_start seems to not have been started!"
     exit 1
   else

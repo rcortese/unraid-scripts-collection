@@ -22,6 +22,8 @@ The script works as such (using virsh):
   * Shuts it down
   * Checks periodically until it is no longer listed (or timeout)
 * Starts next one on the list
+* If startup is not successful
+  * Start originally active VM again
 
  If started from inside a VM on the list, run it on the background otherwise the script is killed upon VM shut down.
 
