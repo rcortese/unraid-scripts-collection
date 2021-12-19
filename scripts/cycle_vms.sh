@@ -90,14 +90,14 @@ start_vm() {
 await_vm_termination() {
   local -r vm_name="$1"; shift
   local -ri timeout=$1; shift
-  local termination_type="${1:-shutdown}"
+  local termination_type="$1"
 
   local -i time_elapsed=1 # setting it to 0 makes it not a number apparently (went with workaround =1 here and -gt and +1 below)
   # until vm name no longer listed by virsh
   until ! vm_is_active "$vm_name"
   do
     local timeout_warning="timeout in $((timeout+1-time_elapsed))s"
-    echo "Waiting for $termination_type of $vm_name ($timeout_warning)"
+    echo "Waiting for $termination_type shutdown of $vm_name ($timeout_warning)"
     # wait
     sleep 1 && ((time_elapsed++))
     # break if timeout exceeded
@@ -120,12 +120,12 @@ alternate_vms() {
     echo "No VM on 'vm_names_list' variable was reported active..."
   else
     shutdown_vm "$vm_to_shutdown"
-    await_vm_termination "$vm_to_shutdown" $graceful_shutdown_timeout "graceful shutdown"
+    await_vm_termination "$vm_to_shutdown" $graceful_shutdown_timeout "graceful"
 
     if vm_is_active "$vm_to_shutdown"; then
       if [ "$force_shutdown_if_timeout" = true ]; then
         force_shutdown_vm "$vm_to_shutdown"
-        await_vm_termination "$vm_to_shutdown" $forced_shutdown_timeout "forced shutdown"
+        await_vm_termination "$vm_to_shutdown" $forced_shutdown_timeout "forced"
       fi
     fi
   fi
