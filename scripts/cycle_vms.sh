@@ -5,10 +5,9 @@ set -e
 ## User filled variables
 ##
 
-
-# names of VMs to alternate between (may be more than 2)
-# if a VM is listed as active, the next one will be started. If no VM is active, the first one will be started
-declare -r -a vms_to_alternate=( "Pop_OS" "Windows 10" )
+# names of VMs to cycle through, as listed by virsh (same as on Unraid VM tab)
+# More than 2 may be used
+declare -r -a vm_names_list=( "HiveOS" "Windows 10" )
 
 # timeouts
 # time to wait for a graceful shutdown to be considered success
@@ -22,11 +21,9 @@ declare -r force_shutdown_if_timeout=true
 # no action, only logs if set to true
 declare -r debug_mode=true
 
-
 ##
 ## IMPORTANT: FILL THE VARIABLES ABOVE ACCORDINGLY
 ###################################################
-
 
 ###################################################
 ## Functions
@@ -37,7 +34,7 @@ vm_is_active() {
 
   local -r vm_name="$1"
 
-  if virsh list | grep -q "${vm_name}"; then
+  if virsh list | grep -q "$vm_name"; then
     return 0
   else
     return 1
@@ -50,11 +47,11 @@ shutdown_vm() {
 
   local -r vm_name="$1"
 
-  echo "Gracefully shutting down VM: ${vm_name}"
+  echo "Gracefully shutting down VM: $vm_name"
   if [ "$debug_mode" = true ]; then
     echo "no action taken, debug mode only..."
   else
-    virsh shutdown "${vm_name}"
+    virsh shutdown "$vm_name"
   fi
 }
 
@@ -64,11 +61,11 @@ force_shutdown_vm() {
 
   local -r vm_name="$1"
 
-  echo "Forcing shut down of ${vm_name} VM..."
-  if [ "${debug_mode}" = true ]; then
+  echo "Forcing shut down of $vm_name VM..."
+  if [ "$debug_mode" = true ]; then
     echo "--- no action taken, debug mode only ---"
   else
-    virsh destroy "${vm_name}"
+    virsh destroy "$vm_name"
   fi
 }
 
@@ -78,11 +75,11 @@ start_vm() {
 
   local -r vm_name="$1"
 
-  echo "Starting ${vm_name} VM..."
-  if [ "${debug_mode}" = true ]; then
+  echo "Starting $vm_name VM..."
+  if [ "$debug_mode" = true ]; then
     echo "--- no action taken, debug mode only ---"
   else
-    virsh start "${vm_name}"
+    virsh start "$vm_name"
   fi
 }
 
@@ -93,18 +90,18 @@ start_vm() {
 await_vm_termination() {
   local -r vm_name="$1"; shift
   local -ri timeout=$1; shift
-  local termination_type="${1:-shutdown}"
+  local termination_type="$1"
 
   local -i time_elapsed=1 # setting it to 0 makes it not a number apparently (went with workaround =1 here and -gt and +1 below)
   # until vm name no longer listed by virsh
-  until ! vm_is_active "${vm_name}"
+  until ! vm_is_active "$vm_name"
   do
     local timeout_warning="timeout in $((timeout+1-time_elapsed))s"
-    echo "Waiting for ${termination_type} of ${vm_name} (${timeout_warning})"
+    echo "Waiting for $termination_type shutdown of $vm_name ($timeout_warning)"
     # wait
     sleep 1 && ((time_elapsed++))
     # break if timeout exceeded
-    if [ ${time_elapsed} -gt ${timeout} ]; then
+    if [ $time_elapsed -gt $timeout ]; then
       echo "Timeout reached!"
       break
     fi
@@ -119,21 +116,21 @@ alternate_vms() {
   local -r vm_to_shutdown="$1"; shift
   local -r vm_to_start="$1"
 
-  if [ -z "${vm_to_shutdown}" ]; then
-    echo "No VM on 'vms_to_alternate' variable was reported active..."
+  if [ -z "$vm_to_shutdown" ]; then
+    echo "No VM on 'vm_names_list' variable was reported active..."
   else
-    shutdown_vm "${vm_to_shutdown}"
-    await_vm_termination "${vm_to_shutdown}" ${graceful_shutdown_timeout} "graceful shutdown"
+    shutdown_vm "$vm_to_shutdown"
+    await_vm_termination "$vm_to_shutdown" $graceful_shutdown_timeout "graceful"
 
-    if vm_is_active "${vm_to_shutdown}"; then
+    if vm_is_active "$vm_to_shutdown"; then
       if [ "$force_shutdown_if_timeout" = true ]; then
-        force_shutdown_vm "${vm_to_shutdown}"
-        await_vm_termination "${vm_to_shutdown}" ${forced_shutdown_timeout} "forced shutdown"
+        force_shutdown_vm "$vm_to_shutdown"
+        await_vm_termination "$vm_to_shutdown" $forced_shutdown_timeout "forced"
       fi
     fi
   fi
 
-  start_vm "${vm_to_start}"
+  start_vm "$vm_to_start"
 }
 
 # Main funcion...
@@ -141,35 +138,37 @@ alternate_vms() {
 main() {
 
   # vm_to_start defaults to first one
-  local vm_to_start="${vms_to_alternate[0]}"
+  local vm_to_start="${vm_names_list[0]}"
   local vm_to_shutdown
 
   echo "Searching for active VMs:
   "
   echo "$(virsh list)
   "
-  for i in "${!vms_to_alternate[@]}"
+  for i in "${!vm_names_list[@]}"
   do
-    if vm_is_active "${vms_to_alternate[i]}"; then
-      echo "${vms_to_alternate[i]} VM reported active!"
+    if vm_is_active "${vm_names_list[i]}"; then
+      echo "${vm_names_list[i]} VM reported active!"
       # set active vm for shutdown
-      vm_to_shutdown="${vms_to_alternate[i]}"
+      vm_to_shutdown="${vm_names_list[i]}"
       # set next listed vm for startup
-      if ! [ -z "${vms_to_alternate[i+1]}" ]; then
-        vm_to_start="${vms_to_alternate[i+1]}"
+      if ! [ -z "${vm_names_list[i+1]}" ]; then
+        vm_to_start="${vm_names_list[i+1]}"
       fi
-      echo "next on list: ${vm_to_start}"
+      echo "next on list: $vm_to_start"
     fi
   done
 
-  alternate_vms "${vm_to_shutdown}" "${vm_to_start}"
+  alternate_vms "$vm_to_shutdown" "$vm_to_start"
 
   sleep 10
-  if ! vm_is_active "${vm_to_start}"; then
-    echo "ERROR: VM ${vm_to_start} seems to not have been started!"
+  if ! vm_is_active "$vm_to_start"; then
+    # restart originally active vm if failure
+    start_vm "$vm_to_shutdown"
+    echo "ERROR: VM $vm_to_start seems to not have been started!"
     exit 1
   else
-    echo "SUCCESS: VM ${vm_to_start} seems to have been started successfully!"
+    echo "SUCCESS: VM $vm_to_start seems to have been started successfully!"
     exit 0
   fi
 }
